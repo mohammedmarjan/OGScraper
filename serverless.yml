@@ -1,0 +1,12 @@
+service: aws-nodejs 
+provider:
+ name: aws
+ runtime: nodejs16.x
+functions:
+  OGScraper:
+    handler: index.handler
+    events:
+      - http:
+          path: parseOGData
+          method: post
+          cors: true
