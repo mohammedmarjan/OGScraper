@@ -1,0 +1,9 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "title": "OGScraperInputModel",
+  "type": "object",
+  "required": ["url"],
+  "properties": {
+    "url": { "type": "string" }
+  }
+}
