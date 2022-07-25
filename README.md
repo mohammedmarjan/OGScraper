@@ -12,6 +12,14 @@ cd OGScraper
 npm install
 ```
 
+## Deployment
+
+Make sure you have [Serverless](https://www.serverless.com/) installed.
+
+```sh
+serverless deploy
+```
+
 ## Documentation
 
 Details on OGP ( Open Graph Parameters ) can be found at:
