@@ -10,3 +10,9 @@ functions:
           path: parseOGData
           method: post
           cors: true
+          request:
+            schemas:
+              application/json:
+                schema: ${file(OGScraperPostRequestSchema.json)}
+                name: OGScraperInputModel
+                description: 'Validation model for OGScraper'
