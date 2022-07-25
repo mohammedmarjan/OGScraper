@@ -1,38 +1,29 @@
 var cheerio = require("cheerio");
 var axios = require("axios");
 
-const url =
-  "https://stackoverflow.com/questions/679915/how-do-i-test-for-an-empty-javascript-object";
-
-const parsePageData = async (data) => {
+const parsePageData = (data) => {
   var $ = cheerio.load(data);
-  // console.log("page data: ", data);
-  // console.log("cheerio: ",$)
-  // let parsedData = {};
-  let parsedData = await parseOGData($);
+  let parsedData = parseOGData($);
 
   if (
-    parsedData && // 👈 null and undefined check
+    parsedData && // null and undefined check
     Object.keys(parsedData).length === 0 &&
     Object.getPrototypeOf(parsedData) === Object.prototype
   ) {
-    //default response data keys
+    //default keys in response object
     parsedData = { title: "", description: "", images: "" };
-    parsedData = await parseRelevantData($, parsedData);
+    parsedData = parseOtherRelevantData($, parsedData);
   }
-
-  result = JSON.stringify(parsedData, undefined, 2);
-  return result;
+  return parsedData;
 };
 
-const parseOGData = async (data) => {
+const parseOGData = (pageData) => {
   let parsedOGData = {};
-  var meta = data("meta");
+  var meta = pageData("meta");
 
   var keys = Object.keys(meta);
 
   keys.forEach(function (key) {
-    // console.log("attribs: ", meta[key].attribs?.property);
     if (
       meta[key].attribs &&
       meta[key].attribs.property &&
@@ -45,27 +36,49 @@ const parseOGData = async (data) => {
   return parsedOGData;
 };
 
-const parseRelevantData = async (data, releventDataObj) => {
+const parseOtherRelevantData = (pageData, releventDataObj) => {
   Object.keys(releventDataObj).forEach((key) => {
-    releventDataObj[key] = data(key)?.text();
+    releventDataObj[key] = pageData(key)?.text();
   });
-  // console.log("releventDataObj", releventDataObj);
   return releventDataObj;
 };
 
 exports.handler = async (event, context) => {
+  let statusCode, responseBody;
   try {
-    var result = {};
-    const { url } = JSON.parse(event.body);
-    const resp = await axios.request({ url });
-    result = await parsePageData(resp.data);
-    console.log(result);
-    return result;
-  } catch (error) {
-    console.log("Error", error);
-    return error;
-  }
-};
-let event = { body: { url } };
-exports.handler(JSON.stringify(event));
+    var url = null;
+    if (typeof event.body === "object") {
+      url = event.body.url;
+    } else if (typeof event.body === "string") {
+      let stringBody = JSON.stringify(event.body);
+      let jsonBody = JSON.parse(stringBody);
+      let jsBody = JSON.parse(jsonBody);
+      url = jsBody["url"];
+    }
+    console.log("url: ", url);
 
+    if (!url) {
+      statusCode = 401;
+      responseBody = "No valid url found";
+      console.log(responseBody);
+      console.log(event.body);
+    } else {
+      const resp = await axios.request({ url });
+      responseBody = parsePageData(resp.data);
+      statusCode = 200;
+    }
+  } catch (error) {
+    console.log("Error: ", error);
+    statusCode = 402;
+    responseBody = error;
+  }
+  const response = {
+    isBase64Encoded: false,
+    headers: {
+      "Content-Type": "application/json",
+    },
+    statusCode,
+    body: JSON.stringify(responseBody),
+  };
+  return response;
+};
